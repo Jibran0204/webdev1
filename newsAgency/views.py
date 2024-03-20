@@ -28,7 +28,7 @@ def login_user(request):
         print(data)
         user = authenticate(username=username, password=password)
         hmm = User.objects.filter(is_superuser=True).values_list('username')
-        print(hmm)
+        print("jsanfjfn")
 
 
     if user is not None:
