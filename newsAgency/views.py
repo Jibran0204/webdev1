@@ -27,8 +27,8 @@ def login(request):
 
         # cosntruct data
         data = 'user name: ' + username + ' password: ' + password
-        # debugging purposes
-        print(data)
+        
+        # print(data)
         user = authenticate(username=username, password=password)
         # hmm = User.objects.filter(is_superuser=True).values_list('username')
         print("jsanfjfn")
@@ -128,7 +128,7 @@ def stories(request):
             'story_details': story.details} 
             for story in stories]
 
-        return JsonResponse(serialized_stories, safe=False)
+        return JsonResponse({"stories": serialized_stories}, safe=False)
 
 
 
