@@ -16,7 +16,7 @@ class newsStory(models.Model):
     region = models.CharField(max_length=10, choices=[('uk', 'UK'), ('eu', 'Europe'), ('w', 'World')])
     author = models.ForeignKey(Author, on_delete=models.CASCADE)
     date = models.DateField()
-    details = models.CharField(max_length=1000)
+    details = models.CharField(max_length=128)
 
     def __str__(self):
         return self.headline

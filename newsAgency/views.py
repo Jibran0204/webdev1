@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import Author, newsStory
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, logout as django_logout, login as django_login
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
@@ -16,8 +16,11 @@ def test(request):
     return HttpResponse("this is a test.")
 
 @csrf_exempt
-def login_user(request):
+def login(request):
     if request.method == "POST":
+
+        if request.user.is_authenticated:
+            return HttpResponse('User is already logged in')
 
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -27,27 +30,26 @@ def login_user(request):
         # debugging purposes
         print(data)
         user = authenticate(username=username, password=password)
-        hmm = User.objects.filter(is_superuser=True).values_list('username')
+        # hmm = User.objects.filter(is_superuser=True).values_list('username')
         print("jsanfjfn")
 
 
     if user is not None:
         if user.is_active:
-            login(request, user)
-            
-            return HttpResponse('login successful')
+            django_login(request, user)
+            request.session['username'] = username
+            return HttpResponse('login successful', status=200)
         else:
-            return HttpResponse('login failed')
+            return HttpResponse('login failed', status=401)
     else:
-        return HttpResponse('login failed')
+        return HttpResponse('login failed', status=401)
     
 @csrf_exempt
-def logout_user(request):
+def logout(request):
     if request.method == "POST":
-        user = request.POST.get('username')
-
+        
         if request.user.is_authenticated:
-            logout(request)
+            django_logout(request)
             return HttpResponse("logged out", status=200)
         else:
             return HttpResponse("Not logged in")
@@ -86,8 +88,6 @@ def stories(request):
         story = newsStory(headline=headline, category=category, region=region, details=details, author=author, date = date)
         story.save()
         
-        hmm = newsStory.objects.all()
-        print(hmm)
         return HttpResponse("you can post a story", status = 201)
     
     elif request.method == "GET":
@@ -125,20 +125,20 @@ def delete_story(request, story_id):
             # Retrieve the story object from the database based on the story_id
             story = newsStory.objects.get(pk=story_id)
         except newsStory.DoesNotExist:
-            return HttpResponse("Story not found", status=404)
+            return HttpResponse("Story not found", status=501)
 
         # Fetch the current logged-in user directly
         user = request.user  
 
         # Compare the author of the story with the current user
         if story.author.user != user:  # Assuming Author.user is a ForeignKey to User
-            return HttpResponse("You are not the author of this story", status=403)
+            return HttpResponse("You are not the author of this story", status=501)
 
         # Delete the story
         story.delete()
         return HttpResponse("Story deleted successfully", status=200)
     else:
-        return HttpResponse("Method Not Allowed", status=405)
+        return HttpResponse("Method Not Allowed", status=501)
     
     
 
