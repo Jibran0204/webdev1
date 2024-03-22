@@ -31,7 +31,7 @@ def login(request):
         # print(data)
         user = authenticate(username=username, password=password)
         # hmm = User.objects.filter(is_superuser=True).values_list('username')
-        print("jsanfjfn")
+        # print("jsanfjfn")
 
 
     if user is not None:
@@ -65,36 +65,56 @@ def check_login(request):
 @csrf_exempt
 def stories(request):
     if request.method == "POST":
-        print("BEFORE")
+        # print("BEFORE")
         if request.user.is_authenticated:
             # If authenticated, get the username from the session data
-            print("AFTER")
+            # print("AFTER")
             username = request.session.get('username')
-            print(username)
+            # print(username)
             if not username:
                 return HttpResponse("Username not found in session data", status=400)
 
             # Get the user object
             try:
                 user = User.objects.get(username=username)
-                print(user)
+                # print(user)
             except User.DoesNotExist:
                 return HttpResponse("User not found", status=400)
             
         data = json.loads(request.body.decode())
-        print(data)
+        # print(data)
         # get all the story info
         headline = data.get('headline')
         category = data.get('category')
         region = data.get('region')
         details = data.get('details')
 
+        # Validate headline length
+        if not (1 <= len(headline) <= 64):
+            return HttpResponse("Headline length must be between 1 and 64 characters", status=503)
+
+        # Validate category
+        valid_cats = ['pol', 'art', 'tech', 'trivia']
+        if category not in valid_cats:
+            return HttpResponse("Invalid category", status=503)
+
+        # Validate region
+        valid_regs = ['uk', 'eu', 'w']
+        if region not in valid_regs:
+            return HttpResponse("Invalid region", status=503)
+
+        # Validate details length
+        if not (1 <= len(details) <= 128):
+            return HttpResponse("Details length must be between 1 and 128 characters", status=503)
+
+
         # get the current datetime
         date = timezone.now()
+        # print(date)
         
         try:
             author = Author.objects.get(user=user)
-            print(author)
+            # print(author)
         except Author.DoesNotExist:
             return  HttpResponse("Author doesnt exist", status=400)
         
@@ -128,6 +148,10 @@ def stories(request):
             'story_details': story.details} 
             for story in stories]
 
+        if not serialized_stories:
+            # If no stories found, return a 404 response
+            return HttpResponse("No stories found", status=404)
+
         return JsonResponse({"stories": serialized_stories}, safe=False)
 
 
@@ -137,9 +161,9 @@ def delete_story(request, story_id):
     if request.method == "DELETE":
         if request.user.is_authenticated:
             # If authenticated, get the username from the session data
-            print("AFTER")
+            # print("AFTER")
             username = request.session.get('username')
-            print(username)
+            # print(username)
             if not username:
                 return HttpResponse("Username not found in session data", status=400)
 
