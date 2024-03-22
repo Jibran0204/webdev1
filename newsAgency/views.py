@@ -65,16 +65,19 @@ def check_login(request):
 @csrf_exempt
 def stories(request):
     if request.method == "POST":
-    
+        print("BEFORE")
         if request.user.is_authenticated:
             # If authenticated, get the username from the session data
+            print("AFTER")
             username = request.session.get('username')
+            print(username)
             if not username:
                 return HttpResponse("Username not found in session data", status=400)
 
             # Get the user object
             try:
                 user = User.objects.get(username=username)
+                print(user)
             except User.DoesNotExist:
                 return HttpResponse("User not found", status=400)
             
@@ -89,9 +92,9 @@ def stories(request):
         # get the current datetime
         date = timezone.now()
         
-
         try:
             author = Author.objects.get(user=user)
+            print(author)
         except Author.DoesNotExist:
             return  HttpResponse("Author doesnt exist", status=400)
         
@@ -115,28 +118,47 @@ def stories(request):
         if date != '*':
             stories = stories.filter(date=date)
 
-        # Serialize the queryset
-        serialized_stories = serialize('json', stories)
+        serialized_stories = [{
+            'key': story.id,
+            'headline': story.headline, 
+            'story_cat': story.category, 
+            'story_region': story.region, 
+            'story_date': story.date,
+            'author': str(story.author),
+            'story_details': story.details} 
+            for story in stories]
 
-        return HttpResponse(serialized_stories, content_type='application/json')
+        return JsonResponse(serialized_stories, safe=False)
+
 
 
 @csrf_exempt
 def delete_story(request, story_id):
     if request.method == "DELETE":
+        if request.user.is_authenticated:
+            # If authenticated, get the username from the session data
+            print("AFTER")
+            username = request.session.get('username')
+            print(username)
+            if not username:
+                return HttpResponse("Username not found in session data", status=400)
+
+            # Get the user object
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                return HttpResponse("User not found", status=400)
+
         try:
             # Retrieve the story object from the database based on the story_id
             story = newsStory.objects.get(pk=story_id)
         except newsStory.DoesNotExist:
             return HttpResponse("Story not found", status=501)
-
         # Fetch the current logged-in user directly
         user = request.user  
-
         # Compare the author of the story with the current user
         if story.author.user != user:  # Assuming Author.user is a ForeignKey to User
             return HttpResponse("You are not the author of this story", status=501)
-
         # Delete the story
         story.delete()
         return HttpResponse("Story deleted successfully", status=200)
