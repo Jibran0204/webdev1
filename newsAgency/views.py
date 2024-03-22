@@ -65,7 +65,19 @@ def check_login(request):
 @csrf_exempt
 def stories(request):
     if request.method == "POST":
+    
+        if request.user.is_authenticated:
+            # If authenticated, get the username from the session data
+            username = request.session.get('username')
+            if not username:
+                return HttpResponse("Username not found in session data", status=400)
 
+            # Get the user object
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                return HttpResponse("User not found", status=400)
+            
         data = json.loads(request.body.decode())
         print(data)
         # get all the story info
@@ -73,11 +85,10 @@ def stories(request):
         category = data.get('category')
         region = data.get('region')
         details = data.get('details')
-        username = data.get('username')
 
         # get the current datetime
         date = timezone.now()
-        user = User.objects.get(username=username)
+        
 
         try:
             author = Author.objects.get(user=user)
@@ -91,8 +102,7 @@ def stories(request):
         return HttpResponse("you can post a story", status = 201)
     
     elif request.method == "GET":
-
-        # implement a message which is returned if there are no stories found
+        # Implement a message which is returned if there are no stories found
         category = request.GET.get('story_cat')
         region = request.GET.get('story_region')
         date = request.GET.get('story_date')
@@ -104,19 +114,12 @@ def stories(request):
             stories = stories.filter(region=region)
         if date != '*':
             stories = stories.filter(date=date)
-        print(stories)
 
-        serialized_stories = [{
-            'key': story.id,
-            'headline': story.headline, 
-            'story_cat': story.category, 
-            'story_region': story.region, 
-            'story_date': story.date,
-            'author': str(story.author),
-            'story_details': story.details} 
-            for story in stories]
-        stories_json = {"stories": serialized_stories}
-        return HttpResponse(status=200, content=json.dumps(stories_json), content_type="application/json")
+        # Serialize the queryset
+        serialized_stories = serialize('json', stories)
+
+        return HttpResponse(serialized_stories, content_type='application/json')
+
 
 @csrf_exempt
 def delete_story(request, story_id):
