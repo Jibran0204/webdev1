@@ -115,8 +115,8 @@ def stories(request):
             'author': str(story.author),
             'story_details': story.details} 
             for story in stories]
-
-        return JsonResponse(serialized_stories, safe=False)
+        stories_json = {"stories": serialized_stories}
+        return HttpResponse(status=200, content=json.dumps(stories_json), content_type="application/json")
 
 @csrf_exempt
 def delete_story(request, story_id):
